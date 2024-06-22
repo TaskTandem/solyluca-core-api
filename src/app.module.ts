@@ -1,5 +1,5 @@
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
@@ -11,6 +11,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { ProductCategoryModule } from './product-category/product-category.module';
 import { ProductsModule } from './products/products.module';
 import { TasksService } from './tasks/tasks.service';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { TasksService } from './tasks/tasks.service';
     BackupsModule,
     CategoriesModule,
     ProductsModule, 
-    ProductCategoryModule,
+    ProductCategoryModule, UploadModule,
   ],
   controllers: [],
   providers: [

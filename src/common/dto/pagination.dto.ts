@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsOptional, IsPositive, Min } from 'class-validator';
 
 
@@ -11,7 +11,7 @@ export class PaginationDto {
     })
     @IsOptional()
     @IsPositive()
-    @Type( () => Number ) // enableImplicitConversions: true
+    @Type( () => Number )
     limit?: number;
     
     @ApiProperty({
@@ -19,7 +19,14 @@ export class PaginationDto {
     })
     @IsOptional()
     @Min(0)
-    @Type( () => Number ) // enableImplicitConversions: true
+    @Type( () => Number )
     offset?: number;
+
+    @ApiProperty({
+        default: false,
+    })
+    @IsOptional()
+    @Transform(({ value} ) => value === 'true')
+    count?: boolean;
 
 }

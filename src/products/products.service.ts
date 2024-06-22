@@ -51,12 +51,41 @@ export class ProductsService {
           productsIds.push( ...productsCategories.map( productCategory => productCategory.productId ) );
         }
       }
-  
+
+      let finalDto = findProductDtoData;
+      if ( productsIds.length > 0 ) finalDto.ids = productsIds;
+
       const products = await this.productRepository.find({
-        where: this.getWhereClause({ ...findProductDtoData, ids: productsIds }),
+        where: this.getWhereClause(finalDto),
       })
   
       return products;
+    } catch (error) {
+      this.handleDBError( error );
+    }
+  }
+
+  async count( findProductDto: FindProductDto ){
+    try {
+      const { categoriesIds = null , ...findProductDtoData } = findProductDto;
+      let productsIds = [];
+  
+      if ( categoriesIds && categoriesIds.length > 0 ){
+        for (const categoryId of categoriesIds ) {
+          const productsCategories = await this.productCategoryService.findAllByCategoryId( categoryId )
+          productsIds.push( ...productsCategories.map( productCategory => productCategory.productId ) );
+        }
+      }
+      
+      let finalDto = findProductDtoData;
+      if ( productsIds.length > 0 ) finalDto.ids = productsIds;
+
+
+      const count = await this.productRepository.count({
+        where: this.getWhereClause(finalDto),
+      })
+  
+      return count;
     } catch (error) {
       this.handleDBError( error );
     }
@@ -162,7 +191,7 @@ export class ProductsService {
   }
 
   private handleDBError( error: any ){
-    console.log(error);
+    // console.log(error);
 
     if (error instanceof HttpException ) throw error; 
     if (error.code === '23505') throw new BadRequestException( error.detail );

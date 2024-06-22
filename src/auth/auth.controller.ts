@@ -4,9 +4,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { CreateUserDto, LoginUserDto } from './dto';
 import { User } from './entities/user.entity';
-import { GetUser, GetRawHeaders, RoleProtected, Auth } from './decorators';
-import { ValidRoles } from './interfaces';
-import { UserRoleGuard } from './guards/user-role.guard';
+import { GetUser, Auth } from './decorators';
+import { generateResponseObject } from '../common/helpers/transform-response.helper';
 
 
 @Controller('auth')
@@ -15,20 +14,23 @@ export class AuthController {
 
   @Post('register')
   @Auth('admin')
-  register(@Body() createUserDto: CreateUserDto ) {
-    return this.authService.createUser(createUserDto);
+  async register(@Body() createUserDto: CreateUserDto ) {
+    const user = await this.authService.createUser(createUserDto);
+    return generateResponseObject( user, 200, 'User created succesfully');
   }
 
   @Post('login')
-  loginUser(@Body() loginUserDto:LoginUserDto){
-    return this.authService.loginUser(loginUserDto)
+  async loginUser(@Body() loginUserDto:LoginUserDto){
+    const loginData = await this.authService.loginUser(loginUserDto)
+    return generateResponseObject( loginData, 200, 'User logged in succesfully');
   }
 
   @Get('check-status')
   @Auth()
-  checkAuthStatus(
+  async  checkAuthStatus(
     @GetUser() user:User,
   ){
-    return this.authService.checkAuthStatus(user);
+    const authStatus = await this.authService.checkAuthStatus(user);
+    return generateResponseObject( authStatus, 200, 'User logged in succesfully');
   }
 }

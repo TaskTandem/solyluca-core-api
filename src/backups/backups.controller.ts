@@ -1,32 +1,37 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Query } from '@nestjs/common';
 import { Response } from 'express';
 import { BackupsService } from './backups.service';
-import { CreateBackupDto, UpdateBackupDto, FindBackuptDto } from './dto';
+import { FindBackuptDto } from './dto';
+import { generateResponseObject } from 'src/common/helpers/transform-response.helper';
 
 @Controller('backups')
 export class BackupsController {
   constructor(private readonly backupsService: BackupsService) {}
 
   @Post()
-  create() {
-    return this.backupsService.writePostgresBackup();
+  async create() {
+    const backup = await this.backupsService.writePostgresBackup();
+    return generateResponseObject( backup, 200, 'Backup created succesfully')
   }
 
   @Get()
-  findAll(
+  async findAll(
     @Query() findBackuptDto: FindBackuptDto,
   ) {
-    return this.backupsService.findAll( findBackuptDto );
+    const backups = await this.backupsService.findAll( findBackuptDto );
+    return generateResponseObject( backups, 200 )
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.backupsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const backup = await this.backupsService.findOne(id);
+    return generateResponseObject( backup, 200 )
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.backupsService.remove(id);
+  async remove(@Param('id') id: string) {
+    const backupDeleted = await this.backupsService.remove(id);
+    return generateResponseObject( backupDeleted, 200, 'Backup deleted succesfully' )
   }
 
   @Post('/download/:id')

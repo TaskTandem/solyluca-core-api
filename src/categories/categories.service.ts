@@ -30,13 +30,24 @@ export class CategoriesService {
     }
   }
 
-  async findAll( findCategoryDto: FindCategoryDto) {
+  async findAll( findCategoryDto: FindCategoryDto ) {
     try {
       const categories = await this.categoryRepository.find({
         where: this.getWhereClause( findCategoryDto ),
 
       });
       return categories;
+    } catch (error) {
+      this.handleDBError(error);
+    }
+  }
+
+  async count( findCategoryDto: FindCategoryDto ){
+    try {
+      const count = await this.categoryRepository.count({
+        where: this.getWhereClause( findCategoryDto ),
+      });
+      return count;
     } catch (error) {
       this.handleDBError(error);
     }
