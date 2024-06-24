@@ -8,7 +8,8 @@ export class CreateCategoryDto {
 
     @IsString()
     @MinLength(1)
-    description: string;
+    @IsOptional()
+    description?: string;
 
     @IsUUID(null, { message: 'parentId must be a UUID or null' })
     @ValidateIf((object, value) => value !== null)
