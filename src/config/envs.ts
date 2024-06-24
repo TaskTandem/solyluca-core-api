@@ -17,6 +17,7 @@ interface EnvVars {
     PORT: number;
     UPLOAD_RATE_LIMIT: number;
     UPLOAD_RATE_TTL: number;
+    TEMP_IMAGES_DIRECTORY: string;
 }
 
 const envsSchema = joi.object({
@@ -35,6 +36,7 @@ const envsSchema = joi.object({
     PORT: joi.number().required(),
     UPLOAD_RATE_LIMIT: joi.number().required(),
     UPLOAD_RATE_TTL: joi.number().required(),
+    TEMP_IMAGES_DIRECTORY: joi.string().required(),
 })
 .unknown( true );
 
@@ -60,4 +62,5 @@ export const envs = {
     port: envVars.PORT,
     uploadRateLimit: envVars.UPLOAD_RATE_LIMIT,
     uploadRateTtl: envVars.UPLOAD_RATE_TTL,
+    tempImagesDirectory: envVars.TEMP_IMAGES_DIRECTORY
 }

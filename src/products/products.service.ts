@@ -2,10 +2,12 @@ import { Injectable, Logger, NotFoundException, HttpException, BadRequestExcepti
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, FindOptionsWhere, ILike, In } from 'typeorm';
 
-import { CreateProductDto, UpdateProductDto, FindProductDto } from './dto';
+import { CreateProductDto, UpdateProductDto, FindProductDto, RemoveImageProductDto } from './dto';
 import { Product } from './entities/product.entity';
 import { ProductCategoryService } from '../product-category/product-category.service';
 import { Category } from '../categories/entities/category.entity';
+import { S3Service } from '../s3/s3.service';
+import { S3_ROUTES } from '../s3/constants/s3-routes.enum';
 
 @Injectable()
 export class ProductsService {
@@ -18,6 +20,8 @@ export class ProductsService {
     private readonly productCategoryService: ProductCategoryService,
 
     private readonly dataSource: DataSource,
+
+    private readonly s3Service: S3Service,
 
   ){}
 
@@ -59,6 +63,19 @@ export class ProductsService {
         where: this.getWhereClause(finalDto),
       })
   
+      return products;
+    } catch (error) {
+      this.handleDBError( error );
+    }
+  }
+
+  async findAllByCategoryId( categoryId: string, findProductDto: FindProductDto ){
+    try {
+      const productsCategories = await this.productCategoryService.findAllByCategoryId( categoryId )
+      const productsIds = productsCategories.map( productCategory => productCategory.productId );
+      const products = await this.productRepository.find({
+        where: this.getWhereClause({ ids: productsIds, ...findProductDto}),
+      })
       return products;
     } catch (error) {
       this.handleDBError( error );
@@ -148,8 +165,35 @@ export class ProductsService {
     }
   }
 
+  async uploadImage( productId:string, file: Express.Multer.File ){
+    const product = await this.findOneOrFail( productId );
+    const imageUrl = await this.s3Service.upload( file, S3_ROUTES.PRODUCTS );
+    const newImages = [ ...product.images, imageUrl ];
+    return this.update( productId, { images: newImages } );
+  }
+
+  async uploadImages( productId:string, files: Express.Multer.File[] ){
+    const product = await this.findOneOrFail( productId );
+    const urls = await this.s3Service.uploadSeveral( files, S3_ROUTES.PRODUCTS );
+    const newImages = [ ...product.images, ...urls ];
+    return this.update( productId, { images: newImages } );
+  }
+
+  async removeImage( removeImageProductDto: RemoveImageProductDto ) {
+    const { id: productId, image: imageUrl } = removeImageProductDto;
+    const product = await this.findOneOrFail( productId );
+    if ( !product.images.includes( imageUrl ) ) throw new Error(`image: ${ imageUrl } is not related to product ( ${ product.name } ) `);
+    await this.s3Service.delete( imageUrl, S3_ROUTES.PRODUCTS );
+    const newImages = product.images.filter( image => image !== imageUrl );
+    return this.update( productId, { images: newImages } );
+  }
+
   async remove(id: string) {
     try {
+      const product = await this.findOneOrFail( id );
+
+      for (const image of product.images) await this.s3Service.delete( image, S3_ROUTES.PRODUCTS );
+      
       await this.productCategoryService.deleteAllByProductId( id );
       await this.productRepository.delete({ id });
       return true;

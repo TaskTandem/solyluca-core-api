@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { v4 as uuid } from 'uuid';
-import * as mime from 'mime-types';
 import { envs } from '../config/envs';
-import { CreateUploadDto, UpdateUploadDto } from './dto';
+import * as path from 'path';
+import * as fs from 'fs';
+import { convertBufferToWebp } from '../common/helpers/compress-image.helper';
 
 @Injectable()
-export class UploadService {
+export class S3Service {
   private readonly s3Client = new S3Client({
     region: envs.awsS3Region
   });
@@ -16,21 +17,30 @@ export class UploadService {
 
     for (const file of files) {
       const url = await this.upload( file, routeS3 );
-      urls.push( url);
+      urls.push( url );
     }
 
     return urls;
   }
 
   async upload( file: Express.Multer.File, routeS3: string ){
-    const fileName = this.generateKey( file, routeS3 );
+    const extension = this.getExtension( file );
+    const { inputPath, outputPath, tempDir} = await convertBufferToWebp( file.buffer, extension );
+    const newMimeType = 'image/webp';
+    const fileName = this.generateKey( file, routeS3, 'webp' );
+
+    const finalBuffer = await fs.promises.readFile(outputPath);
+    await fs.promises.unlink(inputPath).catch(() => {});
+    await fs.promises.unlink(outputPath).catch(() => {});
+    await fs.promises.rmdir(tempDir).catch(() => {});
 
     await this.s3Client.send(
       new PutObjectCommand({
         Bucket: envs.awsS3BucketName,
         Key: fileName,
-        Body: file.buffer,
-        ContentType: file.mimetype
+        Body: finalBuffer,
+        // ContentType: file.mimetype
+        ContentType: newMimeType
       })
     );
 
@@ -39,13 +49,18 @@ export class UploadService {
     return imageUrl;
   }
 
-  private generateKey( file: Express.Multer.File, routeS3: string ){
-    const index = file.originalname.lastIndexOf('.') + 1;
-    const extension = file.originalname.slice(index);
+  private generateKey( file: Express.Multer.File, routeS3: string, newExtension?: string ){
+    const extension = newExtension || this.getExtension( file );
     const now = Date.now();
     const random = Math.floor(Math.random() * 999)
     const key = `${routeS3}/${uuid()}-${now}-${random}.${extension}`;
     return key;
+  }
+
+  getExtension( file: Express.Multer.File ){
+    const index = file.originalname.lastIndexOf('.') + 1;
+    const extension = file.originalname.slice(index);
+    return extension;
   }
 
   async delete( imageUrl: string, route: string ) {
@@ -62,4 +77,5 @@ export class UploadService {
 
     return true;
   }
+
 }

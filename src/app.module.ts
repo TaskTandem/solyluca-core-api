@@ -12,6 +12,7 @@ import { ProductCategoryModule } from './product-category/product-category.modul
 import { ProductsModule } from './products/products.module';
 import { TasksService } from './tasks/tasks.service';
 import { UploadModule } from './upload/upload.module';
+import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { UploadModule } from './upload/upload.module';
     BackupsModule,
     CategoriesModule,
     ProductsModule, 
-    ProductCategoryModule, UploadModule,
+    ProductCategoryModule, UploadModule, S3Module,
   ],
   controllers: [],
   providers: [
